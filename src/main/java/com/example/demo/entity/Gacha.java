@@ -33,6 +33,12 @@ public class Gacha {
 
     @Column(name = "price_coin", nullable = false)
     private Integer priceCoin;
+    
+    @Column(name = "total_stock")
+    private Integer totalStock;
+    
+    @Column(name = "remaining_stock")
+    private Integer remainingStock;
 
     @Column(nullable = false)
     private String status;
