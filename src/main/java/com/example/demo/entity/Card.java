@@ -2,12 +2,16 @@ package com.example.demo.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+
+import com.example.demo.enums.Rarity;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -32,8 +36,9 @@ public class Card {
     @Column(name = "card_name", nullable = false)
     private String cardName;
 
-    @Column
-    private String rarity;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private Rarity rarity;
 
     @Column(name = "image_url")
     private String imageUrl;

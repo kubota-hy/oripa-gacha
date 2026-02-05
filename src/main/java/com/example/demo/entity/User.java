@@ -37,5 +37,9 @@ public class User {
 	
 	@Column(name = "created_at")
 	private LocalDateTime createdAt;
+	
+	@Column(length = 50)
+	private String name;
+
 
 }
