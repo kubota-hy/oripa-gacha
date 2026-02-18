@@ -15,7 +15,7 @@ public class GachaDrawResponse {
     private Long cardId;
     private String cardName;
 
-    private Integer cardCoinValue; // ★追加（CardのcoinValueを見せる）
+    private Integer cardCoinValue;
 
     private LocalDateTime createdAt;
 

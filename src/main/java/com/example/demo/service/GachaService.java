@@ -2,16 +2,18 @@ package com.example.demo.service;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.example.demo.entity.Card;
 import com.example.demo.entity.Gacha;
+import com.example.demo.entity.GachaItem;
 import com.example.demo.entity.GachaResult;
 import com.example.demo.entity.User;
-import com.example.demo.repository.CardRepository;
+import com.example.demo.enums.GachaResultType;
+import com.example.demo.repository.GachaItemRepository;
 import com.example.demo.repository.GachaRepository;
 import com.example.demo.repository.GachaResultRepository;
 
@@ -21,74 +23,64 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class GachaService {
 
-	private final UserService userService; // ★ UserRepositoryを直に持たない
-	private final GachaRepository gachaRepository;
-	private final CardRepository cardRepository;
-	private final GachaResultRepository gachaResultRepository;
+    private final UserService userService;
+    private final GachaRepository gachaRepository;
+    private final GachaResultRepository gachaResultRepository;
+    private final GachaItemRepository gachaItemRepository;
 
-	private final Random random = new Random();
+    @Transactional
+    public GachaResult drawGacha(Long userId, Long gachaId) {
 
-	@Transactional
-	public GachaResult drawGacha(Long userId, Long gachaId) {
+        Gacha gacha = gachaRepository.findById(gachaId)
+                .orElseThrow(() -> new RuntimeException("ガチャが存在しません"));
 
-		// 1) ガチャ取得（本当はロック推奨：後述）
-		Gacha gacha = gachaRepository.findById(gachaId)
-				.orElseThrow(() -> new RuntimeException("ガチャが存在しません"));
+        if (gacha.getRemainingStock() <= 0) {
+            throw new RuntimeException("このガチャはすでに終了しています");
+        }
 
-		// 2) 在庫チェック（ガチャのルール）
-		if (gacha.getRemainingStock() <= 0) {
-			throw new RuntimeException("このガチャはすでに終了しています");
-		}
+        int price = gacha.getPriceCoin();
+        userService.consumeCoin(userId, price);
 
-		// 3) 価格決定（ガチャのルール）
-		int price = gacha.getPriceCoin();
+        List<GachaItem> availableItems = gachaItemRepository.findAvailableForUpdate(gachaId);
+        if (availableItems.isEmpty()) {
+            throw new RuntimeException("封入在庫がありません");
+        }
 
-		// 4) 引き落とし（ユーザーのルール）※残高チェックもUserService側
-		userService.consumeCoin(userId, price);
+        int idx = ThreadLocalRandom.current().nextInt(availableItems.size());
+        GachaItem selectedItem = availableItems.get(idx);
+        Card selectedCard = selectedItem.getCard();
 
-		// 5) 在庫減算（ガチャの状態変更）
-		gacha.setRemainingStock(gacha.getRemainingStock() - 1);
+        selectedItem.setRemainingQty(selectedItem.getRemainingQty() - 1);
+        gacha.setRemainingStock(gacha.getRemainingStock() - 1);
 
-		// 6) 抽選（ガチャのルール）
-		List<Card> cards = cardRepository.findByGachaId(gachaId);
-		if (cards.isEmpty()) {
-			throw new RuntimeException("カードが設定されていません");
-		}
-		Card selectedCard = cards.get(random.nextInt(cards.size()));
+        User user = userService.findById(userId);
 
+        GachaResult result = new GachaResult();
+        result.setUser(user);
+        result.setGacha(gacha);
+        result.setCard(selectedCard);
+        result.setCreatedAt(LocalDateTime.now());
 
-		// 7) 結果作成・保存（取引の成果物）
-		User user = userService.findById(userId); // 結果にUserを詰めるため
-		GachaResult result = new GachaResult();
-		result.setUser(user);
-		result.setGacha(gacha);
-		result.setCard(selectedCard);
-		result.setResultType("CARD");
-		result.setCreatedAt(LocalDateTime.now());
+        if (selectedCard.getRarity().isAutoConvert()) {
+            userService.addCoin(userId, selectedCard.getCoinValue());
+            result.setResultType(GachaResultType.AUTO_CONVERT);
+        } else {
+            result.setResultType(GachaResultType.PENDING);
+        }
 
+        return gachaResultRepository.save(result);
+    }
 
-		if (selectedCard.getRarity().isAutoConvert()) {
-			// 自動コイン変換
-			userService.addCoin(userId, selectedCard.getCoinValue());
-			result.setResultType("AUTO_CONVERT"); // or enum
-		} else {
-			// ユーザー選択待ち
-			result.setResultType("PENDING");
-		}
+    //ガチャ詳細
+    @Transactional(readOnly = true)
+    public Gacha findById(Long gachaId) {
+        return gachaRepository.findById(gachaId)
+                .orElseThrow(() -> new RuntimeException("ガチャが存在しません"));
+    }
 
-		return gachaResultRepository.save(result);
-	}
-
-	@Transactional(readOnly = true)
-	public Gacha findById(Long gachaId) {
-		return gachaRepository.findById(gachaId)
-				.orElseThrow(() -> new RuntimeException("ガチャが存在しません"));
-	}
-
-	@Transactional(readOnly = true)
-	public List<Gacha> getGachaList() {
-		return gachaRepository.findAll();
-	}
-
-
+    //ガチャ一覧
+    @Transactional(readOnly = true)
+    public List<Gacha> getGachaList() {
+        return gachaRepository.findAll();
+    }
 }
