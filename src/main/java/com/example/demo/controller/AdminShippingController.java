@@ -28,11 +28,7 @@ public class AdminShippingController {
      */
     @GetMapping
     public List<Shipping> list(@RequestParam(required = false) String status) {
-        if (status == null || status.isBlank() || "REQUESTED".equalsIgnoreCase(status)) {
-            return adminShippingService.getRequestedList();
-        }
-        // MVPでは簡略化：REQUESTED以外は未対応
-        throw new IllegalArgumentException("Only status=REQUESTED is supported in MVP");
+        return adminShippingService.list(status);
     }
 
     public record ShipRequest(String trackingNumber) {}

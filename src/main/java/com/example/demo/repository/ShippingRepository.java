@@ -27,6 +27,8 @@ public interface ShippingRepository extends JpaRepository<Shipping, Long> {
 
 	// 発送依頼の重複防止チェック（gachaResultIdはユニーク前提）
 	Optional<Shipping> findByGachaResultId(Long gachaResultId);
+	
+	List<Shipping> findAllByOrderByCreatedAtDesc();
 
 	boolean existsByGachaResultId(Long gachaResultId);
 

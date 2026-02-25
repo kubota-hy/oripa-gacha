@@ -65,4 +65,22 @@ public class AdminShippingService {
         shipping.setStatus(ShippingStatus.DELIVERED);
         return shippingRepository.save(shipping);
     }
+    
+    @Transactional(readOnly = true)
+    public List<Shipping> list(String status) {
+
+        if (status == null || status.isBlank() || "ALL".equalsIgnoreCase(status)) {
+            return shippingRepository.findAllByOrderByCreatedAtDesc();
+        }
+
+        ShippingStatus s;
+        try {
+            s = ShippingStatus.valueOf(status.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Invalid status: " + status);
+        }
+
+        return shippingRepository.findByStatusOrderByCreatedAtDesc(s);
+    }
+
 }

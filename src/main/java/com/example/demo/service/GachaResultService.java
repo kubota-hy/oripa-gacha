@@ -56,12 +56,25 @@ public class GachaResultService {
 
     @Transactional(readOnly = true)
     public List<GachaResultResponse> getPendingResults(Long userId) {
-        return gachaResultRepository
-                .findByUserIdAndResultTypeOrderByCreatedAtDesc(userId, GachaResultType.PENDING)
+
+        // ① PENDING取得
+        List<GachaResult> pendings = gachaResultRepository
+                .findByUserIdAndResultTypeOrderByCreatedAtDesc(userId, GachaResultType.PENDING);
+
+        // ② そのユーザーのShipping（発送依頼済み/発送済み/配達済み全部）を取得してSet化
+        java.util.Set<Long> shippedOrRequestedResultIds = shippingRepository
+                .findByUserIdOrderByCreatedAtDesc(userId)
                 .stream()
+                .map(s -> s.getGachaResultId())
+                .collect(java.util.stream.Collectors.toSet());
+
+        // ③ Shippingが存在するものを除外
+        return pendings.stream()
+                .filter(r -> !shippedOrRequestedResultIds.contains(r.getId()))
                 .map(GachaResultResponse::from)
                 .toList();
     }
+
 
     @Transactional
     public void requestShipping(Long userId, Long resultId) {
