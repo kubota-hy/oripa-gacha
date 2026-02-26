@@ -14,16 +14,12 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 @RequestMapping("/login")
 public class LoginController {
-	
-	private LoginService loginService;
-	
-	@PostMapping
-	public User login(
-			@RequestParam String email,
-			@RequestParam String password) {
-		
-		return loginService.Login(email, password);
-	}
-	
 
+    private final LoginService loginService;
+
+    @PostMapping
+    public User login(@RequestParam String email,
+                      @RequestParam String password) {
+        return loginService.login(email, password); 
+    }
 }

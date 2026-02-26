@@ -10,12 +10,11 @@ import lombok.RequiredArgsConstructor;
 @Service
 @RequiredArgsConstructor
 public class LoginService {
-	
-	private UserRepository userRepository;
-	
-	public User Login(String email,String password) {
-		return userRepository.findByEmailAndPassword(email, password)
-				.orElseThrow(() -> new RuntimeException("メールアドレスまたはパスワードが違います"));
-	}
 
+    private final UserRepository userRepository;
+
+    public User login(String email, String password) {
+        return userRepository.findByEmailAndPassword(email, password)
+                .orElseThrow(() -> new RuntimeException("メールアドレスまたはパスワードが違います"));
+    }
 }
