@@ -1,6 +1,7 @@
 package com.example.demo.repository;
 
 import java.util.List;
+import java.util.Optional;
 
 import jakarta.persistence.LockModeType;
 
@@ -22,4 +23,5 @@ public interface GachaItemRepository extends JpaRepository<GachaItem, Long> {
           and gi.remainingQty > 0
     """)
     List<GachaItem> findAvailableForUpdate(@Param("gachaId") Long gachaId);
+    Optional<GachaItem> findByGachaIdAndCardId(Long gachaId, Long cardId);
 }
